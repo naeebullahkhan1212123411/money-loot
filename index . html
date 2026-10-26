@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Money Loot</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:white}
+header{background:#13233a;padding:22px;text-align:center;border-bottom:2px solid #18c99a}
+header h1{color:#18c99a;margin:0}
+main{max-width:700px;margin:auto;padding:18px}
+.card{background:#17243a;border:1px solid #30445d;border-radius:14px;padding:18px;margin:14px 0}
+h2{color:#18c99a}
+input,select,button{width:100%;padding:13px;margin-top:10px;border-radius:8px;font-size:16px}
+input,select{background:#0b1220;color:white;border:1px solid #53657b}
+button{background:#18c99a;color:#071b17;font-weight:bold;border:0;cursor:pointer}
+.small{color:#b9c8d8;font-size:13px;line-height:1.7}
+.item{border-top:1px solid #40516a;padding:12px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>💰 Money Loot</h1>
+  <p>آپ کا ڈیمو انویسٹمنٹ ڈیش بورڈ</p>
+</header>
+<main>
+  <div class="card">
+    <h2>اکاؤنٹ</h2>
+    <label>آپ کا نام</label>
+    <input id="username" placeholder="اپنا نام لکھیں">
+    <label>رقم (PKR)</label>
+    <input id="amount" type="number" min="100" placeholder="مثلاً 1000">
+    <label>پلان منتخب کریں</label>
+    <select id="plan">
+      <option value="Basic">Basic Plan</option>
+      <option value="Standard">Standard Plan</option>
+      <option value="Premium">Premium Plan</option>
+    </select>
+    <button onclick="submitRequest()">درخواست جمع کریں</button>
+    <p class="small">یہ صرف ڈیمو درخواست ہے۔ اس سے رقم منتقل نہیں ہوتی اور منافع کی ضمانت نہیں۔</p>
+  </div>
+
+  <div class="card">
+    <h2>میری درخواستیں</h2>
+    <div id="requests"></div>
+  </div>
+
+  <div class="card">
+    <h2>ڈیمو ایڈمن پینل</h2>
+    <p class="small">یہ پینل صرف اسی براؤزر میں موجود ڈیمو ریکارڈز کے لیے ہے۔ اس میں حقیقی لاگ اِن یا محفوظ سرور نہیں ہے۔</p>
+    <input id="adminPin" type="password" placeholder="ڈیمو PIN: 1234">
+    <button onclick="showAdmin()">ایڈمن ریکارڈز دیکھیں</button>
+    <div id="adminRecords"></div>
+  </div>
+</main>
+
+<script>
+const KEY = "moneyLootDemoRequests";
+function load(){
+  try{return JSON.parse(localStorage.getItem(KEY)||"[]")}
+  catch(e){return []}
+}
+function save(data){
+  localStorage.setItem(KEY,JSON.stringify(data));
+}
+function submitRequest(){
+  const name=document.getElementById("username").value.trim();
+  const amount=Number(document.getElementById("amount").value);
+  const plan=document.getElementById("plan").value;
+  if(!name || !Number.isFinite(amount) || amount<100){
+    alert("نام درج کریں اور کم از کم 100 روپے کی ڈیمو رقم لکھیں۔");
+    return;
+  }
+  const data=load();
+  data.push({
+    id:Date.now(),
+    name,amount,plan,
+    status:"Pending",
+    date:new Date().toLocaleString()
+  });
+  save(data);
+  render();
+  alert("ڈیمو درخواست محفوظ ہوگئی!");
+}
+function render(){
+  const data=load();
+  document.getElementById("requests").innerHTML=data.length
+    ?data.map(x=>`<div class="item"><b>${esc(x.name)}</b><br>
+      پلان: ${esc(x.plan)}<br>
+      رقم: PKR ${x.amount.toLocaleString()}<br>
+      اسٹیٹس: ${esc(x.status)}<br>
+      <span class="small">${esc(x.date)}</span></div>`).join("")
+    :"ابھی کوئی درخواست نہیں۔";
+}
+function showAdmin(){
+  if(document.getElementById("adminPin").value!=="1234"){
+    alert("غلط ڈیمو PIN");
+    return;
+  }
+  const data=load();
+  document.getElementById("adminRecords").innerHTML=data.length
+    ?data.map(x=>`<div class="item">
+      ${esc(x.name)} — PKR ${x.amount.toLocaleString()}<br>
+      ${esc(x.plan)} — ${esc(x.status)}
+      <button onclick="changeStatus(${x.id},'Approved')">ڈیمو منظور کریں</button>
+      <button onclick="changeStatus(${x.id},'Rejected')">ڈیمو مسترد کریں</button>
+    </div>`).join("")
+    :"کوئی ریکارڈ موجود نہیں۔";
+}
+function changeStatus(id,status){
+  const data=load();
+  const item=data.find(x=>x.id===id);
+  if(item)item.status=status;
+  save(data);
+  render();
+  showAdmin();
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+render();
+</script>
+</body>
+</html>
