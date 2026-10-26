@@ -125,3 +125,144 @@ render();
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Money Loot</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1220;color:white;font-family:Arial}
+header{padding:22px;text-align:center;background:#14243b}
+header h1{color:#22d3a6;margin:0}
+main{max-width:650px;margin:auto;padding:15px}
+.card{background:#17263d;padding:18px;border-radius:14px;margin:14px 0}
+h2{color:#22d3a6}
+input,select,button{width:100%;padding:13px;margin:7px 0;border-radius:8px;font-size:16px}
+input,select{background:#0b1220;color:white;border:1px solid #52647b}
+button{background:#22d3a6;border:0;font-weight:bold}
+.item{padding:12px 0;border-bottom:1px solid #52647b}
+.note{color:#c1cddd;font-size:13px;line-height:1.7}
+</style>
+</head>
+<body>
+<header>
+<h1>💰 Money Loot</h1>
+<p>Deposit • Investment • Withdraw</p>
+</header>
+<main>
+<div class="card">
+<h2>اکاؤنٹ بنائیں</h2>
+<input id="name" placeholder="آپ کا نام">
+<button onclick="login()">ڈیمو اکاؤنٹ کھولیں</button>
+<p id="welcome"></p>
+</div>
+
+<div class="card">
+<h2>Investment Plans</h2>
+<div class="item">Basic Plan — PKR 500 سے</div>
+<div class="item">Standard Plan — PKR 2,000 سے</div>
+<div class="item">Premium Plan — PKR 5,000 سے</div>
+<p class="note">یہ صرف پلانز کا ڈیزائن ہے۔ منافع یا حقیقی سرمایہ کاری فعال نہیں۔</p>
+</div>
+
+<div class="card">
+<h2>Deposit کی ڈیمو درخواست</h2>
+<select id="depositMethod">
+<option>JazzCash</option>
+<option>Easypaisa</option>
+</select>
+<input id="depositAmount" type="number" min="1" placeholder="رقم PKR">
+<button onclick="request('Deposit')">درخواست جمع کریں</button>
+</div>
+
+<div class="card">
+<h2>Withdraw کی ڈیمو درخواست</h2>
+<select id="withdrawMethod">
+<option>JazzCash</option>
+<option>Easypaisa</option>
+</select>
+<input id="withdrawAmount" type="number" min="1" placeholder="رقم PKR">
+<input id="wallet" placeholder="موبائل اکاؤنٹ نمبر (ڈیمو)">
+<button onclick="request('Withdraw')">درخواست جمع کریں</button>
+</div>
+
+<div class="card">
+<h2>میری درخواستیں</h2>
+<div id="history"></div>
+</div>
+
+<div class="card">
+<h2>ڈیمو ایڈمن پینل</h2>
+<p class="note">ڈیمو PIN: 1234۔ یہ محفوظ یا حقیقی ایڈمن لاگ اِن نہیں ہے۔</p>
+<input id="pin" type="password" placeholder="Admin PIN">
+<button onclick="admin()">ریکارڈ دیکھیں</button>
+<div id="adminList"></div>
+</div>
+
+<p class="note">اہم: تمام ریکارڈ صرف اس براؤزر میں محفوظ ہوتے ہیں۔ حقیقی ادائیگی، رقم کی منتقلی یا محفوظ صارف اکاؤنٹس اس ڈیمو میں شامل نہیں۔</p>
+</main>
+
+<script>
+const KEY="moneyLootDemoV1";
+let current="";
+function getData(){
+ try{return JSON.parse(localStorage.getItem(KEY)||"[]")}
+ catch(e){return []}
+}
+function putData(a){localStorage.setItem(KEY,JSON.stringify(a))}
+function safe(s){
+ return String(s).replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ })[c])
+}
+function login(){
+ current=document.getElementById("name").value.trim();
+ if(!current)return alert("اپنا نام لکھیں");
+ document.getElementById("welcome").textContent="خوش آمدید، "+current;
+ render();
+}
+function request(type){
+ if(!current)return alert("پہلے ڈیمو اکاؤنٹ کھولیں");
+ const isD=type==="Deposit";
+ const amount=Number(document.getElementById(isD?"depositAmount":"withdrawAmount").value);
+ const method=document.getElementById(isD?"depositMethod":"withdrawMethod").value;
+ const wallet=document.getElementById("wallet").value.trim();
+ if(!Number.isFinite(amount)||amount<=0)return alert("درست رقم درج کریں");
+ if(!isD&&!wallet)return alert("ڈیمو اکاؤنٹ نمبر درج کریں");
+ const data=getData();
+ data.push({id:Date.now(),name:current,type,amount,method,
+ wallet:isD?"":wallet,status:"Pending",date:new Date().toLocaleString()});
+ putData(data);
+ render();
+ alert("ڈیمو درخواست محفوظ ہوگئی۔ کوئی رقم منتقل نہیں ہوئی۔");
+}
+function render(){
+ const data=getData().filter(x=>x.name===current);
+ document.getElementById("history").innerHTML=data.length?
+ data.map(x=>`<div class="item">${safe(x.type)} — PKR ${x.amount}<br>
+ ${safe(x.method)} — ${safe(x.status)}</div>`).join(""):"کوئی درخواست نہیں";
+}
+function admin(){
+ if(document.getElementById("pin").value!=="1234")
+ return alert("غلط ڈیمو PIN");
+ const data=getData();
+ document.getElementById("adminList").innerHTML=data.length?
+ data.map(x=>`<div class="item">${safe(x.name)} | ${safe(x.type)}<br>
+ PKR ${x.amount} — ${safe(x.method)}<br>
+ اسٹیٹس: ${safe(x.status)}
+ <button onclick="status(${x.id},'Approved')">ڈیمو منظور</button>
+ <button onclick="status(${x.id},'Rejected')">مسترد</button></div>`).join("")
+ :"کوئی ریکارڈ نہیں";
+}
+function status(id,s){
+ const data=getData();
+ const x=data.find(a=>a.id===id);
+ if(x)x.status=s;
+ putData(data);admin();render();
+}
+render();
+</script>
+</body>
+</html>
